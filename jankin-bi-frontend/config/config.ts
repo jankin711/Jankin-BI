@@ -72,7 +72,7 @@ export default defineConfig({
    * @name layout 插件
    * @doc https://umijs.org/docs/max/layout-menu
    */
-  title: 'Ant Design Pro',
+  title: 'Jankin 智能 BI',
   layout: {
     locale: true,
     ...defaultSettings,
@@ -129,7 +129,7 @@ export default defineConfig({
     {
       requestLibPath: "import { request } from '@umijs/max'",
       // 或者使用在线的版本
-      schemaPath: 'http://localhost:8101/api/v2/api-docs',
+      schemaPath: 'http://localhost:8080/api/v2/api-docs',
       projectName: 'jankin-bi',
       // schemaPath: join(__dirname, 'oneapi.json'),
       mock: false,
