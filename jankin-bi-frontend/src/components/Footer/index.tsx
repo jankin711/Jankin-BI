@@ -13,21 +13,15 @@ const Footer: React.FC = () => {
       copyright={`${currentYear} ${defaultMessage}`}
       links={[
         {
-          key: 'Jankin 智能 BI',
-          title: 'Jankin 智能 BI',
-          href: 'https://pro.ant.design',
-          blankTarget: true,
-        },
-        {
           key: 'github',
           title: <GithubOutlined />,
-          href: 'https://github.com/ant-design/ant-design-pro',
+          href: 'https://github.com/jankin711',
           blankTarget: true,
         },
         {
           key: 'Jankin 智能 BI',
           title: 'Jankin 智能 BI',
-          href: 'https://ant.design',
+          href: 'https://github.com/jankin711/Jankin-BI',
           blankTarget: true,
         },
       ]}
