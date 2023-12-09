@@ -12,9 +12,11 @@ import com.jankin.springbootinit.constant.CommonConstant;
 import com.jankin.springbootinit.constant.UserConstant;
 import com.jankin.springbootinit.exception.BusinessException;
 import com.jankin.springbootinit.exception.ThrowUtils;
+import com.jankin.springbootinit.manager.AiManager;
 import com.jankin.springbootinit.model.dto.chart.*;
 import com.jankin.springbootinit.model.entity.Chart;
 import com.jankin.springbootinit.model.entity.User;
+import com.jankin.springbootinit.model.vo.BiResponse;
 import com.jankin.springbootinit.service.ChartService;
 import com.jankin.springbootinit.service.UserService;
 import com.jankin.springbootinit.utils.ExcelUtils;
@@ -42,6 +44,9 @@ public class ChartController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private AiManager aiManager;
 
     private final static Gson GSON = new Gson();
 
@@ -245,7 +250,7 @@ public class ChartController {
      * @return
      */
     @PostMapping("/gen")
-    public BaseResponse<String> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
+    public BaseResponse<BiResponse> genChartByAi(@RequestPart("file") MultipartFile multipartFile,
                                              GenChartByAiRequest genChartByAiRequest, HttpServletRequest request) {
         String name = genChartByAiRequest.getName();
         String goal = genChartByAiRequest.getGoal();
@@ -253,14 +258,45 @@ public class ChartController {
         // 校验
         ThrowUtils.throwIf(StringUtils.isBlank(goal), ErrorCode.PARAMS_ERROR, "目标为空");
         ThrowUtils.throwIf(StringUtils.isNotBlank(name) && name.length() > 100, ErrorCode.PARAMS_ERROR, "名称过长");
+        User loginUser = userService.getLoginUser(request);
+        long biModelId = 1732583181443887105L;
         // 用户输入
         StringBuilder userInput = new StringBuilder();
-        userInput.append("你是一个数据分析师,接下来我会给你我的分析目标和原始数据，请告诉我分析结论。").append("\n");
-        userInput.append("分析目标：").append(goal).append("\n");
-        String result = ExcelUtils.excelToCsv(multipartFile);   // 压缩后的数据
-        userInput.append("数据：").append(result).append("\n");
-        return ResultUtils.success(userInput.toString());
-
+        userInput.append("分析需求：").append("\n");
+        // 拼接分析目标
+        String userGoal = goal;
+        if (StringUtils.isNotBlank(chartType)) {
+            userGoal += "，请使用" + chartType;
+        }
+        userInput.append(userGoal).append("\n");
+        userInput.append("原始数据：").append("\n");
+        // 压缩后的数据
+        String csvData = ExcelUtils.excelToCsv(multipartFile);
+        userInput.append(csvData).append("\n");
+        // 获取返回结果
+        String result = aiManager.doChat(biModelId, userInput.toString());
+        String[] splits = result.split("【【【【【");
+        if (splits.length < 3) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "AI 生成错误");
+        }
+        String genChart = splits[1].trim();
+        String genResult = splits[2].trim();
+        // 保存到数据库
+        Chart chart = new Chart();
+        chart.setName(name);
+        chart.setGoal(goal);
+        chart.setChartData(csvData);
+        chart.setChartType(chartType);
+        chart.setGenChart(genChart);
+        chart.setGenResult(genResult);
+        chart.setUserId(loginUser.getId());
+        boolean saveResult = chartService.save(chart);
+        ThrowUtils.throwIf(!saveResult, ErrorCode.SYSTEM_ERROR, "图表保存失败");
+        BiResponse biResponse = new BiResponse();
+        biResponse.setGenChart(genChart);
+        biResponse.setGenResult(genResult);
+        biResponse.setChartId(chart.getId());
+        return ResultUtils.success(biResponse);
     }
 
 }
