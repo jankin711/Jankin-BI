@@ -24,4 +24,5 @@
         userId,createTime,updateTime,
         isDelete
     </sql>
+
 </mapper>
