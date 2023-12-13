@@ -1,6 +1,6 @@
 import { listMyChartByPageUsingPost } from '@/services/jankin-bi/chartController';
 import { useModel } from '@@/exports';
-import { Avatar, Card, List, message } from 'antd';
+import { Avatar, Card, List, message, Result } from 'antd';
 import Search from 'antd/es/input/Search';
 import ReactECharts from 'echarts-for-react';
 import React, { useEffect, useState } from 'react';
@@ -12,6 +12,8 @@ const MyChartPage: React.FC = () => {
   const initSearchParams = {
     current: 1,
     pageSize: 4,
+    sortField: 'createTime',
+    sortOrder: 'desc',
   };
 
   const [searchParams, setSearchParams] = useState<API.ChartQueryRequest>({ ...initSearchParams });
@@ -76,7 +78,6 @@ const MyChartPage: React.FC = () => {
         }}
         pagination={{
           onChange: (page, pageSize) => {
-            // 当切换分页，在当前搜索条件的基础上，把页数调整为当前的页数
             setSearchParams({
               ...searchParams,
               current: page,
@@ -97,10 +98,46 @@ const MyChartPage: React.FC = () => {
                 title={item.name}
                 description={item.chartType ? '图表类型：' + item.chartType : undefined}
               />
-              <div style={{ marginBottom: 16 }} />
-              <p>{'分析目标：' + item.goal}</p>
-              <div style={{ marginBottom: 16 }} />
-              <ReactECharts option={item.genChart && JSON.parse(item.genChart)} />
+              <>
+                {
+                  item.status === 'wait' && (
+                    <>
+                      <Result
+                        status="warning"
+                        title="待生成"
+                        // 子标题显示执行消息，如果执行消息为空，则显示'当前图表生成队列繁忙，请耐心等候'
+                        subTitle={item.execMessage ?? '当前图表生成队列繁忙，请耐心等候'}
+                      />
+                    </>
+                  )
+                }
+                {item.status === 'running' && (
+                  <>
+                    <Result
+                      status="info"
+                      title="图表生成中"
+                      subTitle={item.execMessage}
+                    />
+                  </>
+                )}
+                {
+                  item.status === 'succeed' && (
+                    <>
+                      <div style={{ marginBottom: 16 }} />
+                      <p>{'分析目标：' + item.goal}</p>
+                      <div style={{ marginBottom: 16 }} />
+                      <ReactECharts option={item.genChart && JSON.parse(item.genChart)} />
+                    </>
+                  )
+                }
+                {
+                  item.status === 'failed' && (
+                    <>
+                      <Result status="error" title="图表生成失败" subTitle={item.execMessage} />
+                    </>
+                  )
+                }
+              </>
             </Card>
           </List.Item>
         )}
