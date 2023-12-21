@@ -1,4 +1,4 @@
-import { genChartByAiAsyncUsingPost } from '@/services/jankin-bi/chartController';
+import { genChartByAiAsyncMqUsingPost } from '@/services/jankin-bi/chartController';
 import { UploadOutlined } from '@ant-design/icons';
 import { Button, Card, Form, Input, Select, Space, Upload, message } from 'antd';
 import { useForm } from 'antd/es/form/Form';
@@ -29,7 +29,8 @@ const AddChartAsync: React.FC = () => {
     };
     try {
       // 需要取到上传的原始数据file→file→originFileObj(原始数据)
-      const res = await genChartByAiAsyncUsingPost(params, {}, values.file.file.originFileObj);
+      // const res = await genChartByAiAsyncUsingPost(params, {}, values.file.file.originFileObj);
+      const res = await genChartByAiAsyncMqUsingPost(params, {}, values.file.file.originFileObj);
       if (!res?.data) {
         message.error('分析失败');
       } else {
